@@ -1095,12 +1095,12 @@
         });
     </script>
     <script>
-        // Registro del Service Worker para PWA
+        // Desactivamos el Service Worker temporalmente para solucionar problemas de caché en iPad
         if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js')
-                    .then(reg => console.log('Service Worker registrado'))
-                    .catch(err => console.log('Error al registrar SW:', err));
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                for(let registration of registrations) {
+                    registration.unregister();
+                }
             });
         }
     </script>
