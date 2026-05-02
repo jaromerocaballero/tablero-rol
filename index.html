@@ -663,10 +663,10 @@
             token.className = 'token with-img';
             token.draggable = true;
             token.dataset.type = type;
-            token.dataset.img = `./Ilustraciones/${asset}`;
+            token.dataset.img = `./fichas/${asset}`;
             token.dataset.size = size;
             token.title = nameClean;
-            token.innerHTML = `<img src="./Ilustraciones/${asset}" alt="${nameClean}">`;
+            token.innerHTML = `<img src="./fichas/${asset}" alt="${nameClean}">`;
             token.addEventListener('dragstart', drag);
             
             // Touch support for sidebar
