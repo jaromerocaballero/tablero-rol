@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dragonbane-v1';
+const CACHE_NAME = 'dragonbane-v2';
 const ASSETS = [
   './',
   './index.html',

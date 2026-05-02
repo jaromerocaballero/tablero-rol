@@ -707,8 +707,8 @@
                 if (touch.clientX >= rect.left && touch.clientX <= rect.right &&
                     touch.clientY >= rect.top && touch.clientY <= rect.bottom) {
                     
-                    const x = touch.clientX - rect.left;
-                    const y = touch.clientY - rect.top;
+                    const x = (touch.clientX - rect.left) / currentScale;
+                    const y = (touch.clientY - rect.top) / currentScale;
                     const snapX = Math.floor(x / cell_size) * cell_size;
                     const snapY = Math.floor(y / cell_size) * cell_size;
                     const size = parseInt(token.dataset.size || "1");
@@ -993,10 +993,10 @@
                 if (currentTool !== 'none' || !draggedElement) return;
                 const touch = e.touches[0];
                 const rect = document.getElementById('drop-zone').getBoundingClientRect();
-                const x = touch.clientX - rect.left;
-                const y = touch.clientY - rect.top;
+                const x = (touch.clientX - rect.left) / currentScale;
+                const y = (touch.clientY - rect.top) / currentScale;
                 
-                // Real-time preview (optional)
+                // Real-time preview
                 token.style.left = (x - (cell_size * size)/2) + 'px';
                 token.style.top = (y - (cell_size * size)/2) + 'px';
                 e.preventDefault();
