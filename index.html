@@ -54,6 +54,38 @@
             flex-direction: column;
             z-index: 100;
             box-shadow: 5px 0 15px rgba(0,0,0,0.5);
+            transition: transform 0.3s ease, margin-left 0.3s ease;
+        }
+
+        body.sidebar-collapsed aside {
+            margin-left: -300px;
+        }
+
+        /* Toggle Button */
+        #sidebar-toggle {
+            position: fixed;
+            left: 310px;
+            top: 20px;
+            z-index: 1000;
+            background: var(--accent-color);
+            background-image: url('parchment.png');
+            background-size: cover;
+            border: 2px solid #5d4037;
+            width: 45px;
+            height: 45px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5rem;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.6);
+            transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            color: #331a00;
+        }
+
+        body.sidebar-collapsed #sidebar-toggle {
+            left: 20px;
         }
 
         header {
@@ -277,7 +309,9 @@
             background-size: cover;
             border: 2px solid #5d4037;
             box-shadow: 0 20px 50px rgba(0,0,0,0.8);
-            flex-shrink: 0; /* Don't shrink */
+            flex-shrink: 0;
+            transform-origin: top center;
+            transition: transform 0.1s ease-out;
         }
 
         #grid-overlay {
@@ -479,19 +513,31 @@
                     <option value="white">Blanco Limpio</option>
                 </select>
             </div>
+            <div class="map-selector" style="margin-top: 10px;">
+                <label style="font-size: 0.8rem; color: var(--accent-color); text-transform: uppercase;">Zoom del Tablero:</label>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <input type="range" id="zoom-slider" min="0.3" max="1.5" step="0.05" value="1" oninput="setMapScale(this.value)" style="flex: 1;">
+                    <span id="zoom-value" style="font-size: 0.8rem; width: 35px;">100%</span>
+                </div>
+                <button class="btn" style="padding: 4px 8px; font-size: 0.7rem;" onclick="fitToScreen()">Ajustar a Pantalla</button>
+            </div>
             <button class="btn" onclick="document.getElementById('local-upload').click()">Añadir Ilustraciones Locales</button>
             <input type="file" id="local-upload" multiple accept="image/*" style="display: none;" onchange="handleFileUpload(event)">
             <button class="btn danger" style="width: 100%;" onclick="clearBoard()">Limpiar Tablero</button>
         </div>
     </aside>
 
+    <button id="sidebar-toggle" onclick="toggleSidebar()" title="Alternar menú">☰</button>
+
     <main>
-        <div id="map-container">
+        <div id="map-wrapper" style="flex-shrink: 0;">
+            <div id="map-container">
             <h2 style="position: absolute; top: 10px; left: 20px; color: rgba(0,0,0,0.4); font-size: 1.2rem; pointer-events: none;">Mapa de Batalla</h2>
             <div id="grid-overlay"></div>
             <canvas id="drawing-canvas"></canvas>
             <div id="drop-zone" ondrop="drop(event)" ondragover="allowDrop(event)">
                 <!-- Tokens will appear here -->
+            </div>
             </div>
         </div>
     </main>
@@ -515,6 +561,52 @@
         const cell_size = 80;
         let selectedToken = null;
         let draggedElement = null;
+        let currentScale = 1;
+
+        function toggleSidebar() {
+            document.body.classList.toggle('sidebar-collapsed');
+            // Re-fit if auto-scaling was active or just to be safe
+            setTimeout(setupCanvas, 350); 
+        }
+
+        function setMapScale(value) {
+            currentScale = parseFloat(value);
+            const map = document.getElementById('map-container');
+            const wrapper = document.getElementById('map-wrapper');
+            
+            map.style.transform = `scale(${currentScale})`;
+            
+            // Adjust wrapper to match scaled size so scrollbars/centering work
+            wrapper.style.width = (1600 * currentScale) + 'px';
+            wrapper.style.height = (1200 * currentScale) + 'px';
+            
+            document.getElementById('zoom-slider').value = currentScale;
+            document.getElementById('zoom-value').innerText = Math.round(currentScale * 100) + '%';
+        }
+
+        function fitToScreen() {
+            const main = document.querySelector('main');
+            const map = document.getElementById('map-container');
+            
+            // Map dimensions (20 cols * 80px, 15 rows * 80px)
+            const mapWidth = 1600; 
+            const mapHeight = 1200;
+            
+            const mainRect = main.getBoundingClientRect();
+            const padding = 60; // Total padding around the map
+            
+            const availableWidth = mainRect.width - padding;
+            const availableHeight = mainRect.height - padding;
+            
+            const scaleW = availableWidth / mapWidth;
+            const scaleH = availableHeight / mapHeight;
+            
+            let scale = Math.min(scaleW, scaleH);
+            if (scale > 1.2) scale = 1.2; // Don't zoom in too much automatically
+            if (scale < 0.3) scale = 0.3; // Minimum scale
+            
+            setMapScale(scale);
+        }
 
         // --- Assets Management ---
         function initAssets() {
@@ -757,8 +849,8 @@
                 isDrawing = true;
                 const rect = canvas.getBoundingClientRect();
                 const touch = e.touches ? e.touches[0] : e;
-                lastX = touch.clientX - rect.left;
-                lastY = touch.clientY - rect.top;
+                lastX = (touch.clientX - rect.left) / currentScale;
+                lastY = (touch.clientY - rect.top) / currentScale;
                 if (e.touches) e.preventDefault();
             };
 
@@ -766,8 +858,8 @@
                 if (!isDrawing) return;
                 const rect = canvas.getBoundingClientRect();
                 const touch = e.touches ? e.touches[0] : e;
-                const x = touch.clientX - rect.left;
-                const y = touch.clientY - rect.top;
+                const x = (touch.clientX - rect.left) / currentScale;
+                const y = (touch.clientY - rect.top) / currentScale;
 
                 ctx.beginPath();
                 ctx.moveTo(lastX, lastY);
@@ -839,9 +931,11 @@
             
             const dropZone = document.getElementById('drop-zone');
             const rect = dropZone.getBoundingClientRect();
-            let x = ev.clientX - rect.left;
-            let y = ev.clientY - rect.top;
-
+            
+            // Adjust coordinates by the current scale
+            let x = (ev.clientX - rect.left) / currentScale;
+            let y = (ev.clientY - rect.top) / currentScale;
+            
             // Snap to Grid Logic
             const snapX = Math.floor(x / cell_size) * cell_size;
             const snapY = Math.floor(y / cell_size) * cell_size;
@@ -913,8 +1007,9 @@
                 const dropZone = document.getElementById('drop-zone');
                 const rect = dropZone.getBoundingClientRect();
                 
-                const x = touch.clientX - rect.left;
-                const y = touch.clientY - rect.top;
+                // Adjust coordinates by the current scale
+                const x = (touch.clientX - rect.left) / currentScale;
+                const y = (touch.clientY - rect.top) / currentScale;
 
                 // Snap
                 const snapX = Math.floor(x / cell_size) * cell_size;
@@ -987,6 +1082,17 @@
 
         // Initialize dynamic tokens
         initAssets();
+
+        // Auto-fit to screen on load if on mobile/small screen
+        window.addEventListener('load', () => {
+            if (window.innerWidth < 1200) {
+                fitToScreen();
+                // Optionally collapse sidebar on very small screens
+                if (window.innerWidth < 800) {
+                    toggleSidebar();
+                }
+            }
+        });
     </script>
     <script>
         // Registro del Service Worker para PWA
