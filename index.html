@@ -577,7 +577,59 @@
             token.innerHTML = `<img src="Ilustraciones/${asset}" alt="${nameClean}" loading="lazy">`;
             token.addEventListener('dragstart', drag);
             
+            // Touch support for sidebar
+            addSidebarTouchSupport(token);
+            
             container.appendChild(token);
+        }
+
+        function addSidebarTouchSupport(token) {
+            let touchClone = null;
+            
+            token.addEventListener('touchstart', (e) => {
+                const touch = e.touches[0];
+                touchClone = token.cloneNode(true);
+                touchClone.style.position = 'fixed';
+                touchClone.style.zIndex = '1000';
+                touchClone.style.opacity = '0.7';
+                touchClone.style.pointerEvents = 'none';
+                touchClone.style.left = (touch.clientX - 25) + 'px';
+                touchClone.style.top = (touch.clientY - 25) + 'px';
+                document.body.appendChild(touchClone);
+            }, { passive: true });
+
+            token.addEventListener('touchmove', (e) => {
+                if (!touchClone) return;
+                const touch = e.touches[0];
+                touchClone.style.left = (touch.clientX - 25) + 'px';
+                touchClone.style.top = (touch.clientY - 25) + 'px';
+                e.preventDefault(); // Prevent scrolling while dragging
+            }, { passive: false });
+
+            token.addEventListener('touchend', (e) => {
+                if (!touchClone) return;
+                const touch = e.changedTouches[0];
+                const dropZone = document.getElementById('drop-zone');
+                const rect = dropZone.getBoundingClientRect();
+                
+                if (touch.clientX >= rect.left && touch.clientX <= rect.right &&
+                    touch.clientY >= rect.top && touch.clientY <= rect.bottom) {
+                    
+                    const x = touch.clientX - rect.left;
+                    const y = touch.clientY - rect.top;
+                    const snapX = Math.floor(x / cell_size) * cell_size;
+                    const snapY = Math.floor(y / cell_size) * cell_size;
+                    const size = parseInt(token.dataset.size || "1");
+                    const tokenDim = size * cell_size - 4;
+                    const finalX = snapX + (cell_size * size - tokenDim) / 2;
+                    const finalY = snapY + (cell_size * size - tokenDim) / 2;
+                    
+                    createNewToken(token.dataset.icon, token.dataset.type, finalX, finalY, token.dataset.img, size);
+                }
+                
+                touchClone.remove();
+                touchClone = null;
+            });
         }
 
         function filterTokens() {
@@ -626,6 +678,7 @@
                     token.title = file.name;
                     token.innerHTML = `<img src="${e.target.result}" alt="${file.name}">`;
                     token.addEventListener('dragstart', drag);
+                    addSidebarTouchSupport(token);
                     container.prepend(token); // Add to the top
                 };
                 reader.readAsDataURL(file);
