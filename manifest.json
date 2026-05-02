@@ -1,0 +1,17 @@
+{
+  "name": "Dragonbane - Tablero de Batalla",
+  "short_name": "Dragonbane",
+  "description": "Creador de mapas de batalla para Dragonbane RPG",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#1a1a1a",
+  "theme_color": "#d4af37",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
